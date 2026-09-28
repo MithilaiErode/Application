@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: mithilai-kinetic-migrator
+    runtime: python
+    plan: starter          # free plan sleeps when idle and can stop long analyses
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: APP_USERNAME
+        value: mithilai
+      - key: APP_PASSWORD
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-opus-5
+      - key: MAX_PARALLEL
+        value: "3"

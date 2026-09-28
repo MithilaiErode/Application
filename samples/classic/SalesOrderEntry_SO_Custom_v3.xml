@@ -1,0 +1,86 @@
+<?xml version="1.0" standalone="yes"?>
+<!-- SYNTHETIC SAMPLE for testing - not a real Epicor export -->
+<CustomizationExport>
+  <XXXDef>
+    <Company>CX</Company>
+    <ProductID>EP</ProductID>
+    <TypeCode>Customization</TypeCode>
+    <Key1>SO_Custom_v3</Key1>
+    <Key2>SalesOrderEntry.SalesOrderForm</Key2>
+    <Description>Sales order defaults and PO validation</Description>
+    <Content>&lt;Customization&gt;&lt;Script&gt;&lt;![CDATA[// **************************************************
+// Custom code for SalesOrderForm
+// Created: 14/03/2019
+// **************************************************
+using System;
+using System.Data;
+using System.Windows.Forms;
+using Ice.BO;
+using Ice.UI;
+using Ice.Lib;
+using Ice.Adapters;
+using Ice.Lib.Customization;
+using Ice.Lib.ExtendedProps;
+using Ice.Lib.Framework;
+using Ice.Lib.Searches;
+using Erp.Adapters;
+
+public class Script
+{
+    private EpiDataView edvOrderHed;
+
+    public void InitializeCustomCode()
+    {
+        edvOrderHed = (EpiDataView)oTrans.EpiDataViews[&quot;OrderHed&quot;];
+        edvOrderHed.EpiViewNotification += new EpiViewNotification(edvOrderHed_EpiViewNotification);
+        oTrans_ordAdapter.BeforeAdapterMethod += new BeforeAdapterMethod(oTrans_ordAdapter_BeforeAdapterMethod);
+
+        // Reference field is not used by ClientX
+        epiTextBoxReference.Visible = false;
+    }
+
+    public void DestroyCustomCode()
+    {
+        edvOrderHed.EpiViewNotification -= new EpiViewNotification(edvOrderHed_EpiViewNotification);
+        oTrans_ordAdapter.BeforeAdapterMethod -= new BeforeAdapterMethod(oTrans_ordAdapter_BeforeAdapterMethod);
+        edvOrderHed = null;
+    }
+
+    // Export customers ship by air by default
+    private void edvOrderHed_EpiViewNotification(EpiDataView view, EpiNotifyArgs args)
+    {
+        if (args.NotifyType == EpiTransaction.NotifyType.AddRow &amp;&amp; args.Row &gt; -1)
+        {
+            int custNum = Convert.ToInt32(view.dataView[args.Row][&quot;CustNum&quot;]);
+            CustomerAdapter custAdapter = new CustomerAdapter(oTrans);
+            custAdapter.BOConnect();
+            if (custAdapter.GetByID(custNum))
+            {
+                string grp = custAdapter.CustomerData.Customer[0].GroupCode;
+                if (grp == &quot;EXP&quot;)
+                {
+                    view.dataView[args.Row][&quot;ShipViaCode&quot;] = &quot;AIR&quot;;
+                }
+            }
+            custAdapter.Dispose();
+        }
+    }
+
+    // PO number is mandatory before saving
+    private void oTrans_ordAdapter_BeforeAdapterMethod(object sender, BeforeAdapterMethodArgs args)
+    {
+        if (args.MethodName == &quot;Update&quot;)
+        {
+            string po = edvOrderHed.dataView[edvOrderHed.Row][&quot;PONum&quot;].ToString();
+            if (string.IsNullOrEmpty(po))
+            {
+                MessageBox.Show(&quot;PO Number is required&quot;);
+                args.Cancel = true;
+            }
+        }
+    }
+}
+]]&gt;&lt;/Script&gt;
+&lt;PropertyChanges&gt;&lt;Control Name=&quot;epiTextBoxReference&quot; Property=&quot;Visible&quot; Value=&quot;False&quot; /&gt;&lt;/PropertyChanges&gt;&lt;/Customization&gt;</Content>
+  </XXXDef>
+</CustomizationExport>

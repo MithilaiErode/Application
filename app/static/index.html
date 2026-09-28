@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinetic Migration Assessor · Mithilai</title>
+<style>
+  :root {
+    --bg: #f5f7fb; --panel: #ffffff; --ink: #1c2434; --muted: #5d6b82; --line: #dfe5ee;
+    --brand: #1f3864; --brand-2: #2f5aa8; --ok: #2e7d32; --warn: #b26a00; --bad: #c62828;
+    --chip: #eef2f8; --code: #0f172a; --code-ink: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: var(--brand); color: #fff; padding: 14px 24px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; }
+  header span { opacity: .8; font-size: 13px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; display: grid; gap: 18px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  h2 { font-size: 16px; margin: 0 0 12px; color: var(--brand); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; }
+  label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  label small { font-weight: 400; color: var(--muted); }
+  input[type=text], input[type=number], textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+  textarea { min-height: 70px; resize: vertical; }
+  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 14px; background: #fafbfd; }
+  .drop input { width: 100%; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  button, .btn { background: var(--brand-2); color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.secondary, button.secondary { background: var(--chip); color: var(--brand); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .progress { height: 10px; background: var(--chip); border-radius: 6px; overflow: hidden; flex: 1; min-width: 200px; }
+  .progress > div { height: 100%; background: var(--brand-2); width: 0; transition: width .4s; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 14px 0; }
+  .card { background: var(--chip); border-radius: 8px; padding: 10px 12px; }
+  .card b { display: block; font-size: 22px; color: var(--brand); }
+  .card span { font-size: 12px; color: var(--muted); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f0f3f8; font-weight: 600; white-space: nowrap; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: #f7f9fc; }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 10px; background: var(--chip); font-size: 12px; white-space: nowrap; }
+  .s-done { color: var(--ok); } .s-failed { color: var(--bad); } .s-running, .s-queued { color: var(--warn); }
+  .error { color: var(--bad); }
+  dialog { width: min(1100px, 96vw); max-height: 92vh; border: 0; border-radius: 12px; padding: 0; }
+  dialog::backdrop { background: rgba(15, 23, 42, .45); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; }
+  .dlg-head h3 { margin: 0; font-size: 16px; }
+  .tabs { display: flex; gap: 4px; padding: 10px 18px 0; flex-wrap: wrap; }
+  .tabs button { background: var(--chip); color: var(--brand); padding: 6px 12px; font-weight: 500; }
+  .tabs button.active { background: var(--brand-2); color: #fff; }
+  .dlg-body { padding: 14px 18px 20px; overflow: auto; max-height: calc(92vh - 110px); }
+  pre { background: var(--code); color: var(--code-ink); padding: 12px 14px; border-radius: 8px; overflow: auto; font: 12.5px/1.45 Consolas, "Cascadia Code", monospace; white-space: pre-wrap; word-break: break-word; }
+  pre.doc { background: #f8fafc; color: var(--ink); border: 1px solid var(--line); font-family: inherit; font-size: 13px; }
+  .file-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .file-head code { font-weight: 600; }
+  .muted { color: var(--muted); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kinetic Migration Assessor</h1>
+  <span>Mithilai · Classic → Kinetic customisation analysis &amp; conversion</span>
+</header>
+<main>
+  <section class="panel" id="new-job">
+    <h2>1. New assessment</h2>
+    <form id="job-form">
+      <div class="grid">
+        <div><label for="client">Client name *</label><input type="text" id="client" name="client" required placeholder="ClientX Manufacturing"></div>
+        <div><label for="current_version">Current Epicor version</label><input type="text" id="current_version" name="current_version" placeholder="Epicor 10.2.700 (Classic)"></div>
+        <div><label for="target_version">Target Kinetic version</label><input type="text" id="target_version" name="target_version" placeholder="Kinetic 2025.x (Cloud)"></div>
+        <div><label for="naming_prefix">Naming prefix</label><input type="text" id="naming_prefix" name="naming_prefix" placeholder="CX_"></div>
+        <div><label for="hourly_rate">Hourly rate</label><input type="number" id="hourly_rate" name="hourly_rate" min="0" step="1" placeholder="180"></div>
+      </div>
+      <div style="margin-top:12px">
+        <label for="requirements">Requirements &amp; preferences <small>(optional)</small></label>
+        <textarea id="requirements" name="requirements" placeholder="e.g. Prefer BPMs over Functions. Reduce customisations where standard Kinetic works. Sales Order Entry customisation SO_Old is no longer used."></textarea>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="drop">
+          <label for="files">Classic customisation exports *</label>
+          <input type="file" id="files" name="files" multiple required accept=".xml,.zip,.cs,.txt">
+          <div class="hint">XML exports, a zip of exports, or .cs script files.</div>
+        </div>
+        <div class="drop">
+          <label for="samples">Kinetic sample exports <small>(recommended)</small></label>
+          <input type="file" id="samples" name="samples" multiple accept=".json,.xml,.zip,.txt,.cs,.bpm,.efxb,.efxj">
+          <div class="hint">2–3 real exports (a layer, a BPM, a Function) so generated files match your environment's format.</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button type="submit" id="submit-btn">Analyse customisations</button>
+        <span id="form-msg" class="muted"></span>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel hidden" id="job-panel">
+    <div class="row" style="justify-content:space-between">
+      <h2 id="job-title" style="margin:0">2. Results</h2>
+      <a class="btn hidden" id="download-btn" href="#">Download results (.zip)</a>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="progress"><div id="progress-bar"></div></div>
+      <span id="progress-text" class="muted"></span>
+    </div>
+    <div id="parse-errors" class="error"></div>
+    <div class="cards" id="cards"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Form</th><th>Customisation</th><th>Status</th><th>Bucket</th><th>Confidence</th><th>Hours</th><th>Files</th></tr></thead>
+        <tbody id="items"></tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-bottom:0">Everything generated is a <b>draft for consultant review</b>. Import into a TEST environment only.</p>
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">Previous assessments</h2><button class="secondary" id="refresh-jobs">Refresh</button></div>
+    <div class="table-wrap" style="margin-top:10px">
+      <table><thead><tr><th>Client</th><th>Started</th><th>Status</th><th>Progress</th></tr></thead><tbody id="jobs"></tbody></table>
+    </div>
+    <p class="hint">Assessments are kept for 72 hours and are cleared if the service restarts. Download the zip to keep results.</p>
+  </section>
+</main>
+
+<dialog id="detail">
+  <div class="dlg-head"><h3 id="d-title"></h3><button class="secondary" id="d-close">Close</button></div>
+  <div class="tabs" id="d-tabs"></div>
+  <div class="dlg-body" id="d-body"></div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+let currentJob = null, pollTimer = null;
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { msg = (await res.json()).detail || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+$("job-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("submit-btn");
+  btn.disabled = true; $("form-msg").textContent = "Uploading and reading exports…";
+  try {
+    const data = new FormData(e.target);
+    if (!$("samples").files.length) data.delete("samples");
+    const res = await api("/api/jobs", {method: "POST", body: data});
+    $("form-msg").textContent = `Found ${res.customisations} customisation(s). Analysis started.`;
+    openJob(res.id);
+    loadJobs();
+  } catch (err) {
+    $("form-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
+  } finally { btn.disabled = false; }
+});
+
+function openJob(id) {
+  currentJob = id;
+  $("job-panel").classList.remove("hidden");
+  clearInterval(pollTimer);
+  poll();
+  pollTimer = setInterval(poll, 4000);
+  $("job-panel").scrollIntoView({behavior: "smooth"});
+}
+
+async function poll() {
+  if (!currentJob) return;
+  let job;
+  try { job = await api(`/api/jobs/${currentJob}`); } catch (err) {
+    $("progress-text").textContent = err.message; clearInterval(pollTimer); return;
+  }
+  $("job-title").textContent = `2. Results – ${job.client}`;
+  const pct = job.total ? Math.round(100 * job.done / job.total) : 0;
+  $("progress-bar").style.width = pct + "%";
+  const stateText = job.status === "running" ? `Analysing… ${job.done} of ${job.total}` :
+                    job.status === "completed" ? `Completed – ${job.done} of ${job.total}` : "Failed";
+  $("progress-text").textContent = `${stateText} · model ${job.model}` + (job.samples.length ? ` · ${job.samples.length} Kinetic sample(s)` : " · no Kinetic samples (layer steps instead of layer files)");
+  $("parse-errors").textContent = (job.parse_errors || []).join(" ");
+  const dl = $("download-btn");
+  dl.classList.toggle("hidden", job.status !== "completed");
+  dl.href = `/api/jobs/${job.id}/download`;
+
+  const done = job.items.filter((i) => i.status === "done");
+  const buckets = {};
+  done.forEach((i) => buckets[i.bucket] = (buckets[i.bucket] || 0) + 1);
+  const hours = done.reduce((s, i) => s + (i.hours || 0), 0);
+  const failed = job.items.filter((i) => i.status === "failed").length;
+  $("cards").innerHTML =
+    `<div class="card"><b>${job.total}</b><span>Customisations</span></div>` +
+    Object.entries(buckets).map(([b, n]) => `<div class="card"><b>${n}</b><span>${esc(b)}</span></div>`).join("") +
+    `<div class="card"><b>${hours.toFixed(0)}</b><span>Estimated hours</span></div>` +
+    `<div class="card"><b>$${(job.cost_usd || 0).toFixed(2)}</b><span>AI cost so far (est.)</span></div>` +
+    (failed ? `<div class="card"><b style="color:var(--bad)">${failed}</b><span>Failed</span></div>` : "");
+
+  $("items").innerHTML = job.items.map((i) => `
+    <tr class="clickable" data-id="${esc(i.id)}">
+      <td>${esc(i.form || "-")}</td>
+      <td><b>${esc(i.name)}</b>${i.warnings.length ? ` <span class="chip" title="${esc(i.warnings.join(" "))}">⚠ parser note</span>` : ""}</td>
+      <td class="s-${i.status}">${esc(i.status)}${i.reused ? ` <span class="chip" title="No AI cost">reused: ${esc(i.reused)}</span>` : ""}${i.error ? `<div class="error">${esc(i.error)}</div>` : ""}</td>
+      <td>${i.bucket ? `<span class="chip">${esc(i.bucket)}</span>` : "-"}</td>
+      <td>${i.confidence != null ? i.confidence + "%" : "-"}</td>
+      <td>${i.hours != null ? i.hours : "-"}</td>
+      <td>${i.files || "-"}</td>
+    </tr>`).join("");
+  document.querySelectorAll("#items tr").forEach((tr) => tr.addEventListener("click", () => openItem(tr.dataset.id)));
+  if (job.status !== "running") { clearInterval(pollTimer); loadJobs(); }
+}
+
+async function openItem(itemId) {
+  const d = await api(`/api/jobs/${currentJob}/items/${itemId}`);
+  $("d-title").textContent = `${d.form ? d.form + " – " : ""}${d.name}`;
+  const tabs = [];
+  if (d.analysis) {
+    tabs.push(["Analysis", `<pre class="doc">${esc(d.analysis_md)}</pre>`]);
+    tabs.push(["Generated files (" + d.analysis.files.length + ")", d.analysis.files.map((f, n) => `
+      <div class="file-head"><div><code>${esc(f.path)}</code> <span class="chip">${esc(f.file_type)}</span><div class="muted">${esc(f.description)}</div></div>
+      <button class="secondary" data-copy="${n}">Copy</button></div>
+      <pre>${esc(f.content)}</pre>`).join("") || "<p>No files generated.</p>"]);
+    tabs.push(["Import & test steps", `<pre class="doc">${esc(d.test_steps_md)}</pre>`]);
+  } else {
+    tabs.push(["Status", `<p class="${d.error ? "error" : "muted"}">${esc(d.error || "Analysis in progress…")}</p>`]);
+  }
+  tabs.push(["Original Classic code", `<pre>${esc(d.script || "(no script found)")}</pre>`]);
+  $("d-tabs").innerHTML = tabs.map(([t], n) => `<button data-tab="${n}">${esc(t)}</button>`).join("");
+  const show = (n) => {
+    $("d-body").innerHTML = tabs[n][1];
+    document.querySelectorAll("#d-tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab == n));
+    document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(d.analysis.files[b.dataset.copy].content);
+      b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1500);
+    }));
+  };
+  document.querySelectorAll("#d-tabs button").forEach((b) => b.addEventListener("click", () => show(+b.dataset.tab)));
+  show(0);
+  $("detail").showModal();
+}
+$("d-close").addEventListener("click", () => $("detail").close());
+
+async function loadJobs() {
+  try {
+    const jobs = await api("/api/jobs");
+    $("jobs").innerHTML = jobs.length ? jobs.map((j) => `
+      <tr class="clickable" data-id="${esc(j.id)}"><td><b>${esc(j.client)}</b></td>
+      <td>${new Date(j.created * 1000).toLocaleString()}</td><td>${esc(j.status)}</td><td>${j.done} / ${j.total}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">No assessments yet.</td></tr>`;
+    document.querySelectorAll("#jobs tr[data-id]").forEach((tr) => tr.addEventListener("click", () => openJob(tr.dataset.id)));
+  } catch (err) { $("jobs").innerHTML = `<tr><td colspan="4" class="error">${esc(err.message)}</td></tr>`; }
+}
+$("refresh-jobs").addEventListener("click", loadJobs);
+loadJobs();
+</script>
+</body>
+</html>

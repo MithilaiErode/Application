@@ -1,0 +1,7 @@
+anthropic==1.8.0
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+openpyxl==3.1.5
+python-docx==1.2.0
+python-dotenv==1.2.3
